@@ -15,14 +15,19 @@ BIN_DIR = bin
 # all is the default rule
 all: $(EXEC)
 	 
-$(EXEC): $(OBJ_DIR)/$(OBJS)
+$(EXEC): $(BIN_DIR) $(OBJ_DIR) $(OBJ_DIR)/$(OBJS)
 	    @echo "Building ..." 
-		-mkdir $(BIN_DIR)
 		$(CC) $(OPTIONS) $(INCLUDES) $(OBJ_DIR)/$(OBJS) -o $(BIN_DIR)/$@ $(LIBS)
 			 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c  # % pattern wildcard matching
-		-mkdir $(OBJ_DIR)
 	    $(CC) $(OPTIONS) -c $(SRC_DIR)/$*.c $(INCLUDES) -o $@
+
+$(BIN_DIR):
+		-mkdir $(BIN_DIR)
+
+$(OBJ_DIR):
+		-mkdir $(OBJ_DIR)
+
 list:
 	    @echo $(shell ls) # To print output of command 'ls'
 		 
