@@ -30,8 +30,10 @@
 #include <stdlib.h>
 #include <gtk/gtk.h>
 
+// set the buffer size that it uses for reading the file.
 #define BUFFER_SIZE 1024
 
+// on_delete_event: Manage delete event
 static gboolean
 on_delete_event (   GtkWidget *widget,
                     GdkEvent *event,
@@ -42,9 +44,11 @@ on_delete_event (   GtkWidget *widget,
     return GDK_EVENT_PROPAGATE;
 }
 
+// read_file: Read a file using standard io library
 void read_file ( char *filename,
                  GtkTextBuffer *buffer); 
 
+// Main function
 int 
 main(int argc, char **argv)
 {
@@ -55,23 +59,31 @@ main(int argc, char **argv)
 
     GtkTextBuffer *buffer;
 
-    window = gtk_window_new(GTK_WINDOW_TOPLEVEL); 
+    // Create a window
+    window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    // Set title
     gtk_window_set_title(   GTK_WINDOW(window),
                             "gPad");
 
+    // Connect signal when delete-event is threw
     g_signal_connect (  window,
                         "delete-event",
                         G_CALLBACK (on_delete_event),
                         NULL);
 
+    // Create a text view with the
     textView = gtk_text_view_new ();
     buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW (textView));
     gtk_container_add(GTK_CONTAINER (window), textView);
 
+    // Read the file
+    // TODO: Include management of arguments.
     read_file(argv[1], buffer);
 
+    // Show text view
     gtk_widget_show (textView);
 
+    // Show window
     gtk_widget_show (window);
 
     gtk_main();
