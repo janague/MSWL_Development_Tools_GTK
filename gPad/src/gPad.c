@@ -30,8 +30,12 @@
 #include <stdlib.h>
 #include <gtk/gtk.h>
 
+// Set default values
+#define GP_DEFAULT_WIDTH 600
+#define GP_DEFAULT_HEIGHT 400
+
 // set the buffer size that it uses for reading the file.
-#define BUFFER_SIZE 1024
+#define GP_BUFFER_SIZE 1024
 
 // on_delete_event: Manage delete event
 static gboolean
@@ -56,6 +60,7 @@ main(int argc, char **argv)
 
     GtkWidget *window;
     GtkWidget *textView;
+    GtkWidget *sWindow; // scrolled window
 
     GtkTextBuffer *buffer;
 
@@ -64,6 +69,10 @@ main(int argc, char **argv)
     // Set title
     gtk_window_set_title(   GTK_WINDOW(window),
                             "gPad");
+    // Set default size of the window
+    gtk_window_set_default_size (GTK_WINDOW (window),
+                                GP_DEFAULT_WIDTH,
+                                GP_DEFAULT_HEIGHT);
 
     // Connect signal when delete-event is threw
     g_signal_connect (  window,
@@ -71,18 +80,30 @@ main(int argc, char **argv)
                         G_CALLBACK (on_delete_event),
                         NULL);
 
-    // Create a text view with the
+    // Create a text view
     textView = gtk_text_view_new ();
     buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW (textView));
-    gtk_container_add(GTK_CONTAINER (window), textView);
+
+    // Create a scrolled window
+    sWindow = gtk_scrolled_window_new (NULL, NULL);
+    gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (sWindow),
+                                    GTK_POLICY_AUTOMATIC,
+                                    GTK_POLICY_AUTOMATIC);
+
+    // Add scrolled window in application window
+    gtk_container_add(GTK_CONTAINER (window), sWindow);
+    // Add text view in scrolled window
+    gtk_container_add(GTK_CONTAINER (sWindow), textView);
 
     // Read the file
     // TODO: Include management of arguments.
     read_file(argv[1], buffer);
 
+    // Show widgets
     // Show text view
     gtk_widget_show (textView);
-
+    // Show scrolled window
+    gtk_widget_show (sWindow);
     // Show window
     gtk_widget_show (window);
 
@@ -99,7 +120,7 @@ main(int argc, char **argv)
 void read_file ( char *filename,
                  GtkTextBuffer *buffer)
 {
-    char buf[BUFFER_SIZE];
+    char buf[GP_BUFFER_SIZE];
     FILE *inFile;
 
     GtkTextMark *mark;
