@@ -50,21 +50,28 @@
 static gboolean
 on_delete_event (   GtkWidget *widget,
                     GdkEvent *event,
-                    gpointer user_data)
-{
-    gtk_main_quit ();
+                    gpointer user_data);
 
-    return GDK_EVENT_PROPAGATE;
-}
+// New file
+void
+on_new_file_menu (GtkAction *action,
+                  GtkWidget *window);
 
-// activate_action: Catch action from menu entry
-// TODO: Complete each action
-static void
-activate_action (GtkAction *action)
-{
-      g_message ("Action \"%s\" activated", gtk_action_get_name (action));
-}
+// Open a file    
+void
+on_open_file_menu (GtkAction *action,
+                   GtkWidget *window);
 
+// save as file    
+void
+on_save_as_file_menu (GtkAction *action,
+                   GtkWidget *window);
+
+
+// TODO: Remove this global variable
+GtkTextBuffer *gBuffer;
+
+// Show about window
 static void about_cb (  GtkAction *action,
                         GtkWidget *window);
 
@@ -79,23 +86,23 @@ static GtkActionEntry entries[] = {
   { "New", GTK_STOCK_NEW,                      /* name, stock id */
     "_New", "<control>N",                      /* label, accelerator */
     "Create a new file",                       /* tooltip */
-    G_CALLBACK (activate_action) },
+    G_CALLBACK (on_new_file_menu) },
   { "Open", GTK_STOCK_OPEN,                    /* name, stock id */
     "_Open","<control>O",                      /* label, accelerator */
     "Open a file",                             /* tooltip */
-    G_CALLBACK (activate_action) },
+    G_CALLBACK (on_open_file_menu) },
   { "Save", GTK_STOCK_SAVE,                    /* name, stock id */
     "_Save","<control>S",                      /* label, accelerator */
     "Save current file",                       /* tooltip */
-    G_CALLBACK (activate_action) },
+    G_CALLBACK (on_save_as_file_menu) },
   { "SaveAs", GTK_STOCK_SAVE,                  /* name, stock id */
     "Save _As...", NULL,                       /* label, accelerator */
     "Save to a file",                          /* tooltip */
-    G_CALLBACK (activate_action) },
+    G_CALLBACK (on_save_as_file_menu) },
   { "Quit", GTK_STOCK_QUIT,                    /* name, stock id */
     "_Quit", "<control>Q",                     /* label, accelerator */
     "Quit",                                    /* tooltip */
-    G_CALLBACK (activate_action) },
+    G_CALLBACK (on_delete_event) },
   { "About", NULL,                             /* name, stock id */
     "_About", "<control>A",                    /* label, accelerator */
     "About",                                   /* tooltip */
@@ -119,12 +126,6 @@ static const gchar *ui_info =
 "      <menuitem action='About'/>"
 "    </menu>"
 "  </menubar>"
-"  <toolbar  name='ToolBar'>"
-"    <toolitem action='Open'/>"
-"    <toolitem action='Quit'/>"
-"    <separator action='Sep1'/>"
-"    <toolitem action='Logo'/>"
-"  </toolbar>"
 "</ui>";
 
 
@@ -197,6 +198,7 @@ main(int argc, char **argv)
     // Create a text view
     textView = gtk_text_view_new ();
     buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW (textView));
+    gBuffer = buffer;
 
     // Create a scrolled window
     sWindow = gtk_scrolled_window_new (NULL, NULL);
@@ -249,14 +251,15 @@ void read_file ( char *filename,
     GtkTextIter iter;
 
     // Open the file for reading
-    inFile=fopen(filename,"r");
+    inFile=fopen(filename,"rw");
 
     if(inFile==NULL)
     {
         printf("An error occoured!");
-        exit(1);
+        return;
     }
 
+    // Read file in block of GP_BUFFER_SIZE
     while (fgets(buf, sizeof buf, inFile) != NULL)
     {
         mark = gtk_text_buffer_get_insert (buffer);
@@ -274,8 +277,6 @@ static void
 about_cb (GtkAction *action,
           GtkWidget *window)
 {
-  GdkPixbuf *pixbuf;
-
   const gchar *authors[] = {
     "janague",
     NULL
@@ -286,10 +287,7 @@ about_cb (GtkAction *action,
     NULL
   };
 
-  pixbuf = gdk_pixbuf_new_from_resource ("gPad.png", NULL);
-  /* We asser the existence of the pixbuf as we load it from a custom resource. */
-  g_assert (pixbuf);
-
+  // Show about dialog
   gtk_show_about_dialog (GTK_WINDOW (window),
                          "program-name", "gPad",
                          "version", g_strdup_printf ("%s,\nRunning against GTK+ %d.%d.%d",
@@ -303,9 +301,114 @@ about_cb (GtkAction *action,
                          "comments", "Program to demonstrate GTK+ functions.",
                          "authors", authors,
                          "documenters", documentors,
-                         "logo", pixbuf,
-                         "title", "About GTK+ Code Demos",
+                         "logo-icon-name", GTK_STOCK_EDIT,
+                         "title", "About GTK+ gPad",
                          NULL);
 
-  g_object_unref (pixbuf);
+}
+
+
+//_____________________________________________________________________________
+// Evente handler
+//
+// on_delete_event: Manage delete event
+static gboolean
+on_delete_event (   GtkWidget *widget,
+                    GdkEvent *event,
+                    gpointer user_data)
+{
+    gtk_main_quit ();
+
+    return GDK_EVENT_PROPAGATE;
+}
+
+
+// New file
+void
+on_new_file_menu (GtkAction *action,
+                   GtkWidget *window)
+{
+    GtkTextIter start, end;
+
+    // Delete information in the buffer
+    gtk_text_buffer_get_start_iter (gBuffer, &start);
+    gtk_text_buffer_get_end_iter (gBuffer, &end);
+    gtk_text_buffer_delete(gBuffer, &start, &end);
+}
+
+
+// Open a file
+void
+on_open_file_menu (GtkAction *action,
+                   GtkWidget *window)
+{
+    gchar       *filename;
+    GtkWidget   *chooser;
+    GtkTextIter start, end;
+
+    chooser = gtk_file_chooser_dialog_new ( "Open File...",
+                                            GTK_WINDOW (window),
+                                            GTK_FILE_CHOOSER_ACTION_OPEN,
+                                            GTK_STOCK_CANCEL,
+                                            GTK_RESPONSE_CANCEL,
+                                            GTK_STOCK_OPEN,
+                                            GTK_RESPONSE_OK,
+                                            NULL);
+                                               
+    if (gtk_dialog_run (GTK_DIALOG (chooser)) == GTK_RESPONSE_OK)
+    {
+        filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (chooser));
+                
+        gtk_widget_destroy (chooser);
+
+        // Delete information in the buffer
+        gtk_text_buffer_get_start_iter (gBuffer, &start);
+        gtk_text_buffer_get_end_iter (gBuffer, &end);
+        gtk_text_buffer_delete(gBuffer, &start, &end);
+
+        if (filename != NULL)
+        {
+            read_file (filename, gBuffer); 
+        }
+    }
+}
+
+
+// Save file
+void
+on_save_as_file_menu (GtkAction *action,
+                   GtkWidget *window)
+{
+    GtkTextIter start, end;
+    GError      *err=NULL;
+    gchar       *text;
+    GtkWidget   *chooser;
+    gchar       *filename=NULL;
+
+    // Delete information in the buffer
+    gtk_text_buffer_get_start_iter (gBuffer, &start);
+    gtk_text_buffer_get_end_iter (gBuffer, &end);
+    text = gtk_text_buffer_get_text (gBuffer, &start, &end, FALSE);
+
+    chooser = gtk_file_chooser_dialog_new ("Save File...",
+                                           GTK_WINDOW (window),
+                                           GTK_FILE_CHOOSER_ACTION_SAVE,
+                                           GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+                                           GTK_STOCK_SAVE, GTK_RESPONSE_OK,
+                                           NULL);
+                                                                   
+    if (gtk_dialog_run (GTK_DIALOG (chooser)) == GTK_RESPONSE_OK)
+    {
+        filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (chooser));
+
+        if (filename != NULL)
+        {
+            g_file_set_contents (filename, text, -1, &err);
+        }
+    }
+
+    // Free the memory
+    g_free (text);
+                           
+    gtk_widget_destroy (chooser);
 }
